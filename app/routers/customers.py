@@ -1,16 +1,11 @@
-from fastapi import FastAPI, HTTPException, status
-from models import CustomerCreate, Transaction, Invoice, Customer, CustomerUpdate
-from db import SessionDep, create_all_tables
+from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
+from models import Customer, CustomerCreate, CustomerUpdate
+from db  import SessionDep
 
-app = FastAPI(lifespan=create_all_tables)
+router = APIRouter()
 
-@app.get("/")
-async def root():
-    return {"message": "Hello, World!"}
-
-db_customers: list[Customer] = []
-@app.post("/customers", response_model= Customer)
+@router.post("/customers", response_model= Customer, tags=["customers"])
 async def create_customer(customer_data: CustomerUpdate, session: SessionDep):
     customer = Customer.model_validate(customer_data.model_dump())
     session.add(customer)
@@ -18,7 +13,7 @@ async def create_customer(customer_data: CustomerUpdate, session: SessionDep):
     session.refresh(customer)
     return customer
 
-@app.get("/customers/{customer_id}", response_model= Customer)
+@router.get("/customers/{customer_id}", response_model= Customer, tags=["customers"])
 async def get_customer(customer_id: int, session: SessionDep):
     customer = session.get(Customer, customer_id)
     if not customer:
@@ -26,7 +21,7 @@ async def get_customer(customer_id: int, session: SessionDep):
             status_code= status.HTTP_404_NOT_FOUND, detaill = "Customer not found"
             )
     return customer
-@app.patch("/customers/{customer_id}", response_model = Customer, status_code= status.HTTP_201_CREATED)
+@router.patch("/customers/{customer_id}", response_model = Customer, status_code= status.HTTP_201_CREATED, tags=["customers"])
 async def update_customer(customer_id: int, customer_data: CustomerCreate, session: SessionDep):
     customer = session.get(Customer, customer_id)
     if not customer:
@@ -39,7 +34,7 @@ async def update_customer(customer_id: int, customer_data: CustomerCreate, sessi
     session.commit()
     session.refresh(customer)
     return customer
-@app.delete("/customers/{customer_id}")
+@router.delete("/customers/{customer_id}", tags=["customers"])
 async def delete_customer(customer_id: int, session: SessionDep):
     customer = session.get(Customer, customer_id)
     if not customer:
@@ -50,15 +45,6 @@ async def delete_customer(customer_id: int, session: SessionDep):
     session.commit()
     return {"detail": "Customer deleted"}
 
-@app.get("/customers", response_model= list[Customer])
+@router.get("/customers", response_model= list[Customer], tags=["customers"])
 async def list_customers(session: SessionDep):  
     return session.exec(select(Customer)).all()
-
-@app.post("/transactions")
-async def create_transaction(transaction_data: Transaction):
-    return transaction_data
-
-@app.post("/invoices")
-async def create_invoice(invoice_data: Invoice):
-    return invoice_data
-
