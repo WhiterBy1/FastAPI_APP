@@ -6,7 +6,7 @@ from db  import SessionDep
 router = APIRouter()
 
 @router.post("/customers", response_model= Customer, tags=["customers"])
-async def create_customer(customer_data: CustomerUpdate, session: SessionDep):
+async def create_customer(customer_data: CustomerCreate, session: SessionDep):
     customer = Customer.model_validate(customer_data.model_dump())
     session.add(customer)
     session.commit()
@@ -22,7 +22,7 @@ async def get_customer(customer_id: int, session: SessionDep):
             )
     return customer
 @router.patch("/customers/{customer_id}", response_model = Customer, status_code= status.HTTP_201_CREATED, tags=["customers"])
-async def update_customer(customer_id: int, customer_data: CustomerCreate, session: SessionDep):
+async def update_customer(customer_id: int, customer_data: CustomerUpdate, session: SessionDep):
     customer = session.get(Customer, customer_id)
     if not customer:
         raise HTTPException(
