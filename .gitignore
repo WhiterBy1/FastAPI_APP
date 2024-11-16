@@ -70,3 +70,4 @@ media/
 
 # SQLite 
 *.sqlite3
+__pycache__/
