@@ -1,5 +1,5 @@
-from fastapi import FastAPI, HTTPException
-from models import CustomerCreate, Transaction, Invoice, Customer
+from fastapi import FastAPI, HTTPException, status
+from models import CustomerCreate, Transaction, Invoice, Customer, CustomerUpdate
 from db import SessionDep, create_all_tables
 from sqlmodel import select
 
@@ -11,7 +11,7 @@ async def root():
 
 db_customers: list[Customer] = []
 @app.post("/customers", response_model= Customer)
-async def create_customer(customer_data: CustomerCreate, session: SessionDep):
+async def create_customer(customer_data: CustomerUpdate, session: SessionDep):
     customer = Customer.model_validate(customer_data.model_dump())
     session.add(customer)
     session.commit()
@@ -22,14 +22,20 @@ async def create_customer(customer_data: CustomerCreate, session: SessionDep):
 async def get_customer(customer_id: int, session: SessionDep):
     customer = session.get(Customer, customer_id)
     if not customer:
-        raise HTTPException(status_code=404, detail="Customer not found")
+        raise HTTPException(
+            status_code= status.HTTP_404_NOT_FOUND, detaill = "Customer not found"
+            )
     return customer
-@app.patch("/customers/{customer_id}", response_model = Customer)
+@app.patch("/customers/{customer_id}", response_model = Customer, status_code= status.HTTP_201_CREATED)
 async def update_customer(customer_id: int, customer_data: CustomerCreate, session: SessionDep):
     customer = session.get(Customer, customer_id)
     if not customer:
-        raise HTTPException(status_code=404, detail="Customer not found")
-    customer.update_from_dict(customer_data.dict())
+        raise HTTPException(
+            status_code= status.HTTP_404_NOT_FOUND, detaill = "Customer not found"
+            )
+    customer_data_dict = customer_data.model_dump(exclude_unset=True)
+    customer.sqlmodel_update(customer_data)
+    session.add(customer)
     session.commit()
     session.refresh(customer)
     return customer
@@ -37,7 +43,9 @@ async def update_customer(customer_id: int, customer_data: CustomerCreate, sessi
 async def delete_customer(customer_id: int, session: SessionDep):
     customer = session.get(Customer, customer_id)
     if not customer:
-        raise HTTPException(status_code=404, detail="Customer not found")
+        raise HTTPException(
+            status_code= status.HTTP_404_NOT_FOUND, detaill = "Customer not found"
+            )
     session.delete(customer)
     session.commit()
     return {"detail": "Customer deleted"}

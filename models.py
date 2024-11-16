@@ -10,7 +10,7 @@ class CustomerBase(SQLModel):
 class CustomerCreate(CustomerBase):
     pass
 
-class UpdateCreate(CustomerBase):
+class CustomerUpdate(CustomerBase):
     pass
 
 class Customer(CustomerBase, table =True):
