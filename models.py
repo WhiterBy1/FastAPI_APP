@@ -1,6 +1,8 @@
 from pydantic import BaseModel
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import Session, SQLModel, Field, Relationship, select
 from enum import Enum
+from db import  engine
+from pydantic import EmailStr, field_validator
 
 class StatusEnum (str, Enum):
     ACTIVE = 'active'
@@ -17,13 +19,25 @@ class Plan (SQLModel, table = True):
     name:str  = Field(default=None)
     price:int = Field(default=None)
     description:str = Field(default=None)
-    customer: list["Customer"] = Relationship(back_populates="plan", link_model= CustomerPlan)
+    customer: list["Customer"] = Relationship(back_populates="plans", link_model= CustomerPlan)
 
 class CustomerBase(SQLModel):
     name:str  = Field(default=None)
     description: str | None = Field(default=None)
-    email: str = Field(default=None)
+    email: EmailStr = Field(default=None)
     age: int  = Field(default=None)
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, value):
+        session = Session(engine)
+        query = (select(Customer)
+                .where(Customer.email == value))
+        result = session.exec(query).first()
+        
+        if result:
+            raise ValueError("This email is already registered")
+        return value
+        
 
 class CustomerCreate(CustomerBase):
     pass
@@ -34,7 +48,7 @@ class CustomerUpdate(CustomerBase):
 class Customer(CustomerBase, table =True):
     id:int | None = Field(default=None, primary_key=True)
     transaction: list["Transaction"] = Relationship(back_populates="customer")
-    plan: list["Plan"] = Relationship(back_populates="customer", link_model= CustomerPlan)
+    plans: list["Plan"] = Relationship(back_populates="customer", link_model= CustomerPlan)
     
     
 

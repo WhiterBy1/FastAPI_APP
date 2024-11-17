@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Query
 from sqlmodel import select
-from models import Customer, CustomerCreate, CustomerPlan, CustomerUpdate, Plan
+from models import Customer, CustomerCreate, CustomerPlan, CustomerUpdate, Plan, StatusEnum
 from db  import SessionDep
 
 router = APIRouter()
@@ -50,14 +50,14 @@ async def list_customers(session: SessionDep):
     return session.exec(select(Customer)).all()
 
 @router.post("/customers/{customer_id}/plans/{plan_id}", tags=["customers"])
-async def create_customer_to_plan(customer_id: int, plan_id: int, session: SessionDep):	
+async def create_customer_to_plan(customer_id: int, plan_id: int,session: SessionDep , planstatus: StatusEnum= Query()):	
     customer_db = session.get(Customer, customer_id)
     plan_db = session.get(Plan, plan_id)
     
     if not customer_db or not plan_db:
         raise HTTPException (status_code= status.HTTP_404_NOT_FOUND, detail = "Customer or plan not found")
     
-    customer_plan_db = CustomerPlan(plan_id=plan_db.id, customer_id=customer_db.id)
+    customer_plan_db = CustomerPlan(plan_id=plan_db.id, customer_id=customer_db.id, planstatus = planstatus)
     
     session.add(customer_plan_db)
     session.commit()
@@ -66,11 +66,14 @@ async def create_customer_to_plan(customer_id: int, plan_id: int, session: Sessi
     return customer_plan_db
 
 @router.get("/customers/{customer_id}/plans", response_model= list[Plan], tags=["customers"])
-async def list_customer_plans(customer_id: int, session: SessionDep):
+async def list_customer_plans(customer_id: int, session: SessionDep, planstatus: StatusEnum= Query()):
     customer_db = session.get(Customer, customer_id)
     if not customer_db:
         raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail = "Customer not found")
-    plans = customer_db.plan
+    query = (select(CustomerPlan)
+            .where(CustomerPlan.customer_id == customer_id)
+            .where(CustomerPlan.status == planstatus))
+    plans = session.exec(query).all()
     return plans
 
 @router.delete("/customers/{customer_id}/plans/{plan_id}", tags=["customers"])
