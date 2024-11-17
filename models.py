@@ -1,5 +1,24 @@
 from pydantic import BaseModel
 from sqlmodel import SQLModel, Field, Relationship
+from enum import Enum
+
+class StatusEnum (str, Enum):
+    ACTIVE = 'active'
+    INACTIVE = 'inactive'
+    
+class CustomerPlan (SQLModel, table = True):
+    id: int | None = Field(default=None, primary_key=True)
+    plan_id: int = Field(foreign_key= "plan.id")
+    customer_id: int = Field(foreign_key= "customer.id")
+    status: StatusEnum =Field(default=StatusEnum.ACTIVE)
+    
+class Plan (SQLModel, table = True):
+    id: int | None = Field(default=None, primary_key=True)
+    name:str  = Field(default=None)
+    price:int = Field(default=None)
+    description:str = Field(default=None)
+    customer: list["Customer"] = Relationship(back_populates="plan", link_model= CustomerPlan)
+
 class CustomerBase(SQLModel):
     name:str  = Field(default=None)
     description: str | None = Field(default=None)
@@ -15,6 +34,7 @@ class CustomerUpdate(CustomerBase):
 class Customer(CustomerBase, table =True):
     id:int | None = Field(default=None, primary_key=True)
     transaction: list["Transaction"] = Relationship(back_populates="customer")
+    plan: list["Plan"] = Relationship(back_populates="customer", link_model= CustomerPlan)
     
     
 
