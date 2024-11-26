@@ -6,11 +6,13 @@ from db import SessionDep, create_all_tables
 from sqlmodel import select
 from app.routers import customers, transactions, plans
 
-
 app = FastAPI(lifespan=create_all_tables)
 app.include_router(customers.router)
+
 app.include_router(transactions.router)
+
 app.include_router(plans.router)
+
 
 @app.get("/")
 async def root():
