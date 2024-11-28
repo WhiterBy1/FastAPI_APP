@@ -1,0 +1,7 @@
+{
+    "enable_create_customer": true,
+    "enable_update_customer": true,
+    "enable_delete_customer": false,
+    "enable_create_customer_plan": true,
+    "enable_delete_customer_plan": false
+}
