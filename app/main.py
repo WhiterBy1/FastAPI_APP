@@ -23,4 +23,3 @@ async def root():
 @app.post("/invoices")
 async def create_invoice(invoice_data: Invoice):
     return invoice_data
-
